@@ -1,0 +1,98 @@
+# XcodeGen 工程定义
+# 生成命令：xcodegen generate   （会生成 RememberHer.xcodeproj）
+# 首次用 Xcode 打开后，请在两个 Target 的 Signing & Capabilities 里选自己的 Team，
+# 并把 PRODUCT_BUNDLE_IDENTIFIER 与 App Group 改成你自己的（详见安装说明）。
+
+name: RememberHer
+
+options:
+  bundleIdPrefix: com.rememberher
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "15"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+
+targets:
+
+  RememberHer:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+      - path: Shared
+      - path: Resources/Assets.xcassets
+    entitlements:
+      path: RememberHer.entitlements
+    info:
+      path: App-Info.plist
+      properties:
+        CFBundleDisplayName: 记得
+        CFBundleShortVersionString: "1.0.0"
+        CFBundleVersion: "1"
+        UILaunchScreen:
+          UIColorName: ""
+        NSSupportsLiveActivities: true
+        NSSupportsLiveActivitiesFrequentUpdates: true
+        ITSAppUsesNonExemptEncryption: false
+        UIRequiredDeviceCapabilities:
+          - arm64
+        CFBundleURLTypes:
+          - CFBundleURLName: com.rememberher.app
+            CFBundleURLSchemes:
+              - rememberher
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rememberher.app
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: NO
+    dependencies:
+      - target: RememberHerWidget
+        embed: true
+
+  RememberHerWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widget
+      - path: Shared
+    entitlements:
+      path: RememberHerWidget.entitlements
+    info:
+      path: Widget-Info.plist
+      properties:
+        CFBundleDisplayName: 记得小组件
+        CFBundleShortVersionString: "1.0.0"
+        CFBundleVersion: "1"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rememberher.app.widget
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+
+schemes:
+  RememberHer:
+    build:
+      targets:
+        RememberHer: all
+        RememberHerWidget: all
+    run:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
