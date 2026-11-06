@@ -1,0 +1,79 @@
+name: 构建未签名 IPA
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 40
+
+    steps:
+      - name: 拉取源码
+        uses: actions/checkout@v4
+
+      - name: 安装 XcodeGen
+        run: brew install xcodegen
+
+      - name: 整理工程目录
+        run: |
+          if [ ! -f project.yml ]; then
+            FOUND=$(find . -name project.yml -not -path './.git/*' | head -1)
+            if [ -n "$FOUND" ]; then
+              DIR=$(dirname "$FOUND")
+              echo "找到工程目录: $DIR"
+              cp -R "$DIR"/. .
+            fi
+          fi
+          if [ ! -f project.yml ]; then
+            echo "没找到 project.yml，请确认上传的是 RememberHerNative 文件夹里的内容"
+            exit 1
+          fi
+          ls -la
+
+      - name: 生成 Xcode 工程
+        run: xcodegen generate
+
+      - name: 编译（不签名）
+        run: |
+          xcodebuild \
+            -project RememberHer.xcodeproj \
+            -scheme RememberHer \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            clean build
+
+      - name: 打包成 IPA
+        run: |
+          mkdir -p Payload
+          cp -R "build/Build/Products/Release-iphoneos/RememberHer.app" Payload/
+          zip -qry RememberHer-unsigned.ipa Payload
+          ls -lh RememberHer-unsigned.ipa
+
+      - name: 上传 IPA（备用下载）
+        uses: actions/upload-artifact@v4
+        with:
+          name: RememberHer-unsigned-ipa
+          path: RememberHer-unsigned.ipa
+          retention-days: 14
+
+      - name: 发布到 Releases（直接下载 ipa）
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="build-$(date +%Y%m%d-%H%M%S)"
+          gh release create "$TAG" RememberHer-unsigned.ipa \
+            --title "记得 安装包" \
+            --notes "下载后拖进 Sideloadly 安装到 iPhone" \
+            --repo "$GITHUB_REPOSITORY"
